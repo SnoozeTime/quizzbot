@@ -58,11 +58,21 @@ namespace quizzbot {
         } else {
             std::string command_str = message.substr(0, 1);
             std::string message_content = message.substr(1);
+
             if (command_str == "A") {
                 type = command::command_type::ANSWER;
                 content = message_content;
             } else if (command_str == "M") {
                 type = command::command_type::MESSAGE;
+                content = message_content;
+            } else if(command_str == "B") {
+                type = command::command_type::JOIN_NACK;
+                content = message_content;
+            } else if(command_str == "C") {
+                type = command::command_type::JOIN_REQUEST;
+                content = message_content;
+            } else if(command_str == "D") {
+                type = command::command_type::JOIN_ACK;
                 content = message_content;
             } else {
                 content = "Unknown command: " + command_str;
@@ -81,6 +91,15 @@ namespace quizzbot {
                 break;
             case command::command_type::MESSAGE:
                 cmd_stream << "M";
+                break;
+            case command::command_type::JOIN_NACK:
+                cmd_stream << "B";
+                break;
+            case command::command_type::JOIN_REQUEST:
+                cmd_stream << "C";
+                break;
+            case command::command_type::JOIN_ACK:
+                cmd_stream << "D";
                 break;
             default:
                 cmd_stream << "E";

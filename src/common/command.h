@@ -15,6 +15,9 @@ namespace quizzbot {
 
         enum class command_type {
             ERROR,
+            JOIN_REQUEST, // will contain player name.
+            JOIN_ACK, // If can join
+            JOIN_NACK, // If cannot join + error message.
             ANSWER, // either /a or /answer
             MESSAGE,
             EMPTY,

@@ -32,6 +32,9 @@ namespace quizzbot {
         void welcome();
 
         void send_message(const std::string& msg);
+        void send_command(const command& cmd);
+
+        const std::string& name() const { return name_; }
 
     private:
         explicit tcp_connection(boost::asio::io_service &io, chat_room *room, game_handler* game);
@@ -39,8 +42,13 @@ namespace quizzbot {
         void begin_read();
         void handle_receive();
 
+        /// This is when a player does not have a name yet. He shouldn't be able to interact with other people
+        /// yet.
+        void handle_join(const command& cmd);
+
         boost::asio::ip::tcp::socket socket_;
 
+        chat_room *room_;
         // Handlers are installed by the server and are long-lived. If a connection has
         // a dangling pointer to a handler that is clearly a logic error and it should
         // fail hard.
@@ -50,6 +58,9 @@ namespace quizzbot {
         std::vector<uint8_t> acc_packet_;
 
         naive_protocol protocol_;
+
+        // name of the player. Empty at first. Need to be set before anything else. :)
+        std::string name_;
     };
 
     class chat_room: public command_handler {
@@ -65,6 +76,12 @@ namespace quizzbot {
 
         // Send a message to all participants.
         void broadcast(const std::string& message);
+
+        /// This will try to find a player by name. return empty optional if cannot find.
+        ///
+        /// \param name
+        /// \return
+        std::experimental::optional<tcp_connection*> find_by_name(const std::string& name);
     private:
         std::vector<tcp_connection::pointer> participants_;
     };

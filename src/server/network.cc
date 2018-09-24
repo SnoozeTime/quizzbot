@@ -14,10 +14,10 @@ namespace quizzbot {
 // ------------------------------------------------------------------------------------------------------------------
 
     tcp_connection::tcp_connection(boost::asio::io_service &io, chat_room *room, game_handler* game):
-    socket_(io),
-    protocol_() {
-        handlers_.push_back(room);
-        handlers_.push_back(game);
+    socket_{io},
+    room_{room},
+    protocol_{} {
+                handlers_.push_back(game);
     }
 
 void tcp_connection::welcome() {
@@ -50,23 +50,55 @@ void tcp_connection::handle_receive() {
     if (maybe_msg) {
         auto msg = maybe_msg.value();
         LOG_INFO << "Received message: " << msg.str() << std::endl;
-        std::for_each(handlers_.begin(), handlers_.end(), [this, &msg] (command_handler* handler){
-            handler->handle(shared_from_this(), msg);
-        });
+
+        if (name_.empty()) {
+            handle_join(msg);
+        } else {
+            room_->handle(shared_from_this(), msg);
+            std::for_each(handlers_.begin(), handlers_.end(), [this, &msg] (command_handler* handler){
+                handler->handle(shared_from_this(), msg);
+            });
+        }
     }
 
     begin_read();
 }
 
+void tcp_connection::handle_join(const quizzbot::command &cmd) {
+    if (cmd.type() != command::command_type::JOIN_REQUEST) {
+        return;
+    }
+
+    auto candidate_name = cmd.content();
+    if (candidate_name.empty()) {
+        send_command(command{command::command_type::JOIN_NACK, "Name cannot be empty"});
+        return;
+    }
+
+    auto existing = room_->find_by_name(candidate_name);
+    if (existing) {
+        send_command(command{command::command_type::JOIN_NACK, "Name is already taken"});
+        return;
+    }
+
+    name_ = candidate_name;
+    send_command(command{command::command_type::JOIN_ACK, ""});
+}
+
 void tcp_connection::send_message(const std::string& msg_content) {
 
     command msg(command::command_type::MESSAGE, msg_content);
-    boost::asio::async_write(socket_, boost::asio::buffer(protocol_.pack(msg)),
+    send_command(msg);
+}
+
+void tcp_connection::send_command(const command& cmd) {
+
+
+    boost::asio::async_write(socket_, boost::asio::buffer(protocol_.pack(cmd)),
                              [] (const boost::system::error_code& /* error */, size_t /*bytes_transferred*/) {
 
                              });
 }
-
 // ------------------------------------------------------------------------------------------------------------------
 //  CHAT ROOM
 // ------------------------------------------------------------------------------------------------------------------
@@ -91,6 +123,23 @@ void chat_room::transmit_message(const tcp_connection::pointer& emitter, const s
             participant->send_message(message);
         }
     }
+}
+
+std::experimental::optional<tcp_connection*> chat_room::find_by_name(const std::string &name) {
+    if (name.empty()) {
+        return std::experimental::nullopt;
+    }
+
+    auto it = std::find_if(participants_.begin(), participants_.end(), [&name] (const tcp_connection::pointer& p) {
+       return p->name() == name;
+    });
+
+    if (it != participants_.end()) {
+        // miam
+        return std::experimental::optional<tcp_connection*>{(*it).get()};
+    }
+
+    return std::experimental::nullopt;
 }
 
 // ------------------------------------------------------------------------------------------------------------------
