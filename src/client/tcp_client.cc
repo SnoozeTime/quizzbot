@@ -9,9 +9,11 @@ namespace quizzbot {
     using boost::asio::ip::tcp;
 
     tcp_client::tcp_client(boost::asio::io_service &io_service,
-    const std::string &server, const std::string &port)
+            const std::string &server, const std::string &port,
+            event_queue<command> *queue)
     : resolver_(io_service),
-    socket_(io_service) {
+    socket_(io_service),
+    queue_(queue) {
         // Start an asynchronous resolve to translate the server and service names
         // into a list of endpoints.
         tcp::resolver::query query(server, port);
@@ -55,10 +57,9 @@ namespace quizzbot {
         }
     }
 
-    void tcp_client::send(const std::string &msg) {
-        socket_.get_io_service().post([msg, this] {
-            command message(command::command_type::MESSAGE, msg);
-            boost::asio::async_write(socket_, boost::asio::buffer(protocol_.pack(message)),
+    void tcp_client::send(const command &cmd) {
+        socket_.get_io_service().post([cmd, this] {
+            boost::asio::async_write(socket_, boost::asio::buffer(protocol_.pack(cmd)),
                     [] (const boost::system::error_code& err, size_t /* bytes_send */) {
                 if (err) {
                     std::cerr << err.message() << std::endl;
@@ -83,7 +84,7 @@ namespace quizzbot {
     void tcp_client::handle_read() {
         auto maybe_msg = protocol_.parse(aggr_packet_);
         if (maybe_msg) {
-            std::cout << "Received a message:\n" << maybe_msg.value().content() << std::endl;
+            queue_->push(maybe_msg.value());
         }
 
         begin_read();

@@ -12,9 +12,18 @@
 
 namespace quizzbot {
 
+    enum class parse_code {
+        NOT_ENOUGH,
+        PARSE_OK,
+        BAD_CHECKSUM,
+        BLURP,
+    };
+
+    int compute_cc(const Packet& content);
+
     /**
-     * Calculate the checksum
-     */
+      * Calculate the checksum
+    */
     class checksum_parser {
     public:
         parse_code read(const Packet& msg_bytes_, Iter& input_iter, size_t len);
@@ -67,7 +76,7 @@ namespace quizzbot {
          * @param msg
          * @return
          */
-        Packet pack(Msg& msg);
+        Packet pack(const Msg& msg);
 
         /**
          * Parse a list of bytes into a message.
@@ -84,33 +93,6 @@ namespace quizzbot {
     };
 
     using naive_protocol = protocol<command, naive_command_protocol>;
-
-    static int compute_cc(const Packet& content) {
-        int sum = 0;
-        for (const auto& b: content) {
-            sum += b;
-        }
-        return sum % 255;
-    }
-    parse_code checksum_parser::read(const Packet& msg_bytes_, Iter& input_iter, size_t len) {
-        if (len < 2) {
-            return parse_code::NOT_ENOUGH;
-        }
-
-        std::string checksum(input_iter, input_iter+2);
-        input_iter += 2;
-
-
-        int expected_checksum = compute_cc(msg_bytes_);
-        std::stringstream ss;
-        ss << std::setfill('0') << std::setw(2) << std::hex << expected_checksum;
-
-        if (checksum != ss.str()) {
-            return parse_code::BAD_CHECKSUM;
-        }
-
-        return parse_code::OK;
-    }
 
     template<class Msg, class T>
     parse_code content_parser<Msg, T>::read(Msg& msg, Iter& input_iter, size_t to_read, size_t remaining) {
@@ -177,7 +159,7 @@ namespace quizzbot {
 
             if (code == parse_code::NOT_ENOUGH) {
                 return std::experimental::nullopt;
-            } else if (code == parse_code::OK) {
+            } else if (code == parse_code::PARSE_OK) {
                 packet.erase(packet.begin(), iter);
                 return std::experimental::make_optional(msg);
             }
@@ -191,7 +173,7 @@ namespace quizzbot {
     }
 
     template<class Msg, class T>
-    Packet protocol<Msg, T>::pack(Msg &msg) {
+    Packet protocol<Msg, T>::pack(const Msg &msg) {
 
         Packet msg_content = command_protocol_.pack(msg);
 

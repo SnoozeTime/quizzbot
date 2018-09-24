@@ -11,4 +11,8 @@
     BOOST_LOG_STREAM_WITH_PARAMS(::boost::log::trivial::logger::get(),\
         (::boost::log::keywords::severity = ::boost::log::trivial::info))
 
+
+#define LOG_DEBUG \
+    BOOST_LOG_STREAM_WITH_PARAMS(::boost::log::trivial::logger::get(),\
+        (::boost::log::keywords::severity = ::boost::log::trivial::debug))
 #endif //QUIZZBOT_LOG_H

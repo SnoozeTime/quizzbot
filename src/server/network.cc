@@ -13,6 +13,13 @@ namespace quizzbot {
 //  TCP CONNECTION
 // ------------------------------------------------------------------------------------------------------------------
 
+    tcp_connection::tcp_connection(boost::asio::io_service &io, chat_room *room, game_handler* game):
+    socket_(io),
+    protocol_() {
+        handlers_.push_back(room);
+        handlers_.push_back(game);
+    }
+
 void tcp_connection::welcome() {
 
     command msg(command::command_type::MESSAGE, "hello");
@@ -28,7 +35,7 @@ void tcp_connection::begin_read() {
             size_t bytes_received) {
         if (!error) {
             // hum that is inefficient. Figure out a way to read directly from the input buffer...
-            std::cout << "Received " << bytes_received << "bytes\n";
+            LOG_DEBUG << "Received " << bytes_received << "bytes\n";
             acc_packet_.insert(acc_packet_.end(), input_buf_.begin(), input_buf_.begin()+bytes_received);
             handle_receive();
         } else {
@@ -41,10 +48,11 @@ void tcp_connection::handle_receive() {
 
     auto maybe_msg = protocol_.parse(acc_packet_);
     if (maybe_msg) {
-        auto content = maybe_msg.value().content();
-        std::string msg(content.begin(), content.end());
-        std::cout << "Received message > " << std::string(content.begin(), content.end()) << std::endl;
-        room_->transmit_message(shared_from_this(), msg);
+        auto msg = maybe_msg.value();
+        LOG_INFO << "Received message: " << msg.str() << std::endl;
+        std::for_each(handlers_.begin(), handlers_.end(), [this, &msg] (command_handler* handler){
+            handler->handle(shared_from_this(), msg);
+        });
     }
 
     begin_read();
@@ -86,12 +94,25 @@ void chat_room::transmit_message(const tcp_connection::pointer& emitter, const s
 }
 
 // ------------------------------------------------------------------------------------------------------------------
+//  GAME HANDLER
+// ------------------------------------------------------------------------------------------------------------------
+
+game_handler::game_handler(quizzbot::event_queue<quizzbot::command> *queue): queue_(queue) {
+
+    }
+
+void game_handler::handle(const quizzbot::tcp_connection::pointer & /*emitter*/, const quizzbot::command &cmd) {
+    LOG_INFO << "GAME HANDLER HANDLE THINGS";
+    queue_->push(cmd);
+}
+// ------------------------------------------------------------------------------------------------------------------
 //  TCP SERVER
 // ------------------------------------------------------------------------------------------------------------------
 // Waiting for a connection
 void tcp_server::start_accept() {
     tcp_connection::pointer connection = tcp_connection::create_connection(acceptor_.get_io_service(),
-                                                                           &room_);
+                                                                           &room_,
+                                                                           &game_handler_);
 
     acceptor_.async_accept(connection->socket(), [connection, this] (const boost::system::error_code& error) {
         if (!error) {

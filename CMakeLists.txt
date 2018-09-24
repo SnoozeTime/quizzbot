@@ -19,16 +19,17 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_library(quizzbot src/server/network.cc
                      src/server/game.cc
                      src/common/command.cc
-        src/common/protocol.cc)
-target_link_libraries( quizzbot ${Boost_LIBRARIES})
+                     src/common/protocol.cc
+                     src/common/player.cc
+        )
+target_link_libraries(quizzbot ${Boost_LIBRARIES})
 
 # SERVER EXECUTABLE
 add_executable(server src/server/main.cpp)
 target_link_libraries(server quizzbot ${Boost_LIBRARIES} pthread)
 
 # CLIENT EXECUTABLE
-add_executable(client src/client/main.cc src/client/tcp_client.cc)
-target_link_libraries(client quizzbot ${Boost_LIBRARIES} pthread)
+add_subdirectory(src/client)
 
 # My tests !
 add_subdirectory(tests)

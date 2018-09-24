@@ -1,26 +1,12 @@
-//
-// Command will
-//
-
 #pragma once
 #include <string>
 #include <memory>
 #include "quizzbot_types.h"
 
-/*
-    Parse command coming from the main.
 
-    Message coming from a main has the format:
-    2 char for the command, content, \r\n
- */
 namespace quizzbot {
 
-    enum class parse_code {
-        OK,
-        NOT_ENOUGH,
-        BAD_CHECKSUM,
-        BLURP,
-    };
+
 
     class tcp_connection;
     class command {
@@ -31,13 +17,17 @@ namespace quizzbot {
             ERROR,
             ANSWER, // either /a or /answer
             MESSAGE,
-
             EMPTY,
         };
 
         command(): type_(command_type::EMPTY), content_("") {}
         // If it is a command.
         command(command_type type, const std::string& content);
+
+        /**
+          * @return Human-readable description of the message.
+          */
+        std::string str() const;
 
         bool has_error() const;
         command_type type() const;

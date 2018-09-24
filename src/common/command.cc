@@ -1,10 +1,7 @@
-//
-// Created by benoit on 18/09/05.
-//
 
 #include <sstream>
 #include "command.h"
-
+#include <sstream>
 namespace quizzbot {
 
     // If it is a command.
@@ -12,6 +9,32 @@ namespace quizzbot {
         type_(type),
         content_(content) {
 
+    }
+
+
+    std::string command::str() const {
+        // TODO there must be sommething similar to java enum (retrospection? c++17)
+        std::stringstream ss;
+        ss << "<command - Type: ";
+        switch (type_) {
+            case command_type::MESSAGE:
+                ss << "MESSAGE";
+                break;
+            case command_type ::EMPTY:
+                ss << "EMPTY";
+                break;
+            case command_type::ANSWER:
+                ss << "ANSWER";
+                break;
+            case command_type::ERROR:
+                ss << "ERROR";
+                break;
+            default:
+                ss << "UNKNOWN CMD";
+        }
+
+        ss << " - content: " << content_ << ">";
+        return ss.str();
     }
 
     bool command::has_error() const {

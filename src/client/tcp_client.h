@@ -9,15 +9,17 @@
 #include <boost/bind.hpp>
 #include <iostream>
 #include "common/protocol.h"
+#include "common/event_queue.h"
 
 namespace quizzbot {
 
     class tcp_client {
     public:
         tcp_client(boost::asio::io_service &io_service,
-                   const std::string &server, const std::string &port);
+                   const std::string &server, const std::string &port,
+                   event_queue<command> *queue);
 
-        void send(const std::string& msg);
+        void send(const command &cmd);
     private:
         void begin_read();
         void handle_resolve(const boost::system::error_code &err,
@@ -33,6 +35,7 @@ namespace quizzbot {
         Packet aggr_packet_;
 
         naive_protocol protocol_;
+        event_queue<command> *queue_;
     };
 }
 

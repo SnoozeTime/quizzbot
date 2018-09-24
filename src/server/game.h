@@ -9,6 +9,7 @@
 #include <boost/asio.hpp>
 #include <memory>
 #include "network.h"
+#include "common/event_queue.h"
 
 namespace quizzbot {
 

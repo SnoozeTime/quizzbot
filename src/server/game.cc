@@ -3,6 +3,7 @@
 //
 
 #include "game.h"
+#include <iostream>
 
 using namespace quizzbot;
 
@@ -27,8 +28,24 @@ void game::loop() {
     });
 
     // Start the server.
-    server_ = std::make_unique<tcp_server>(io_, 7777);
+    event_queue<command> queue;
+    server_ = std::make_unique<tcp_server>(io_, 7778, &queue);
+
     while (should_run) {
+
+        std::queue<command> current_commands;
+        if (queue.size() != 0) {
+            current_commands = queue.empty();
+        }
+
+        while (!current_commands.empty()) {
+
+            auto cmd = current_commands.front();
+            current_commands.pop();
+
+            std::cout << "GOT THE CMD " << cmd.str() << std::endl;
+        }
+
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
