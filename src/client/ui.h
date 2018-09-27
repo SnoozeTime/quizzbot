@@ -24,8 +24,7 @@ public:
 
     /// Will write the following message to the chat.
     /// \param msg
-    void write_to_chat(std::string from,
-            std::string msg);
+    void write_to_chat(std::string msg);
 
 
     void handle_keyboard();

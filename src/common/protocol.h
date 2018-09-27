@@ -9,15 +9,13 @@
 #include <sstream>
 #include <iomanip>
 #include "command.h"
+#include "quizzbot_types.h"
+#include "message.h"
+#include "parse_helpers.h"
 
 namespace quizzbot {
 
-    enum class parse_code {
-        NOT_ENOUGH,
-        PARSE_OK,
-        BAD_CHECKSUM,
-        BLURP,
-    };
+
 
     int compute_cc(const Packet& content);
 

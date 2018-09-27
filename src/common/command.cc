@@ -26,6 +26,15 @@ namespace quizzbot {
             case command_type::ANSWER:
                 ss << "ANSWER";
                 break;
+            case command_type ::JOIN_ACK:
+                ss << "JOIN_ACK";
+                break;
+            case command_type::JOIN_REQUEST:
+                ss << "JOIN_REQUEST";
+                break;
+            case command_type::JOIN_NACK:
+                ss << "JOIN_NACK";
+                break;
             case command_type::ERROR:
                 ss << "ERROR";
                 break;

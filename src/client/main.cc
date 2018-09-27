@@ -66,7 +66,7 @@ int main()
         while (!current_commands.empty()) {
             auto cmd = current_commands.front();
             current_commands.pop();
-            gui.write_to_chat("ME", cmd.content());
+            gui.write_to_chat(cmd.content());
         }
 
         gui.handle_keyboard();

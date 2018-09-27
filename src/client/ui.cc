@@ -109,11 +109,11 @@ void ui::send_msg() {
     form_driver(form_, REQ_VALIDATION);
     auto buf = field_buffer(field[0], 0);
     if (buf != nullptr) {
-        write_to_chat("me", std::string(buf));
+        write_to_chat("me:" + std::string(buf));
         command cmd{command::command_type::MESSAGE, std::string(buf)};
         client_->send(cmd);
     } else {
-        write_to_chat("me", strerror(errno));
+        write_to_chat(strerror(errno));
     }
 
     // Clear the field so that we can send a new message.
@@ -129,12 +129,12 @@ ui::~ui() {
     endwin();
 }
 
-void ui::write_to_chat(std::string from, std::string msg) {
+void ui::write_to_chat(std::string msg) {
 
     // Trim whitespaces at the end of the msg. For example when we get a message from the input field,
     // it will pad the buffer with empty charcters..
     auto last_index = msg.find_last_not_of(' ');
-    wprintw(my_wins[1], "%s: %s\n", from.c_str(), msg.substr(0, last_index+1).c_str());
+    wprintw(my_wins[1], "%s\n", msg.substr(0, last_index+1).c_str());
     //mvwprintw(my_wins[1], current_chat_line, 2, "%s", ss.str().c_str());
     refresh();
 }

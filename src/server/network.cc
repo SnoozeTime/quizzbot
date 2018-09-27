@@ -120,7 +120,9 @@ void chat_room::add_participant(const tcp_connection::pointer& participant) {
 void chat_room::transmit_message(const tcp_connection::pointer& emitter, const std::string& message) {
     for (const auto& participant: participants_) {
         if (participant != emitter) {
-            participant->send_message(message);
+            std::stringstream ss;
+            ss << emitter->name() << ": " << message;
+            participant->send_message(ss.str());
         }
     }
 }

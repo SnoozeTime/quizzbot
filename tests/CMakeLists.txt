@@ -7,6 +7,7 @@ endfunction()
 add_quizzbot_test(command_test)
 add_quizzbot_test(parser_test)
 add_quizzbot_test(event_queue_test)
+add_quizzbot_test(parse_helpers_test)
 
 add_executable(all_tests command_test.cc parser_test.cc)
 target_link_libraries(all_tests quizzbot gtest gtest_main)

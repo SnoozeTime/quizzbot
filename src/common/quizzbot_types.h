@@ -6,5 +6,14 @@
 #include <vector>
 #include <cstdint>
 
-using Packet = std::vector<std::uint8_t>;
-using Iter = Packet::iterator;
+namespace quizzbot {
+    using Packet = std::vector<std::uint8_t>;
+    using Iter = Packet::iterator;
+
+    enum class parse_code {
+        NOT_ENOUGH,
+        PARSE_OK,
+        BAD_CHECKSUM,
+        BLURP,
+    };
+}
