@@ -11,7 +11,6 @@
 #include "command.h"
 #include "quizzbot_types.h"
 #include "message.h"
-#include "parse_helpers.h"
 
 namespace quizzbot {
 
@@ -91,6 +90,7 @@ namespace quizzbot {
     };
 
     using naive_protocol = protocol<command, naive_command_protocol>;
+    using message_protocol = protocol<Message, MessageProtocol>;
 
     template<class Msg, class T>
     parse_code content_parser<Msg, T>::read(Msg& msg, Iter& input_iter, size_t to_read, size_t remaining) {

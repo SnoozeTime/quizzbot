@@ -57,7 +57,7 @@ namespace quizzbot {
         std::vector<uint8_t> input_buf_ = std::vector<uint8_t>(512);
         std::vector<uint8_t> acc_packet_;
 
-        naive_protocol protocol_;
+        message_protocol protocol_;
 
         // name of the player. Empty at first. Need to be set before anything else. :)
         std::string name_;

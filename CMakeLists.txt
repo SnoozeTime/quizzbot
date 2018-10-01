@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(quizzbot)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic -Wextra -Wno-missing-field-initializers")
 
 # FOR TESTING
@@ -15,8 +15,10 @@ include_directories( ${Boost_INCLUDE_DIRS} )
 # -------------------------------------------
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+
 # Contain all classes without main
 add_library(quizzbot src/server/network.cc
+                     src/server/handler.cc
                      src/server/game.cc
                      src/common/command.cc
                      src/common/protocol.cc
