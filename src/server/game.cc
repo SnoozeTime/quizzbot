@@ -28,12 +28,12 @@ void game::loop() {
     });
 
     // Start the server.
-    event_queue<command> queue;
+    event_queue<Message> queue;
     server_ = std::make_unique<tcp_server>(io_, 7778, &queue);
 
     while (should_run) {
 
-        std::queue<command> current_commands;
+        std::queue<Message> current_commands;
         if (queue.size() != 0) {
             current_commands = queue.empty();
         }
@@ -43,7 +43,7 @@ void game::loop() {
             auto cmd = current_commands.front();
             current_commands.pop();
 
-            std::cout << "GOT THE CMD " << cmd.str() << std::endl;
+            std::cout << "GOT THE CMD " << std::endl;
         }
 
         std::this_thread::sleep_for(std::chrono::seconds(1));

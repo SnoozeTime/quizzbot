@@ -10,160 +10,15 @@
 namespace quizzbot {
 
 // ------------------------------------------------------------------------------------------------------------------
-//  TCP CONNECTION
-// ------------------------------------------------------------------------------------------------------------------
-
-    tcp_connection::tcp_connection(boost::asio::io_service &io, chat_room *room, game_handler* game):
-    socket_{io},
-    room_{room},
-    protocol_{} {
-                handlers_.push_back(game);
-    }
-
-void tcp_connection::welcome() {
-
-    command msg(command::command_type::MESSAGE, "hello");
-    boost::asio::async_write(socket_, boost::asio::buffer(protocol_.pack(msg)),
-                             [] (const boost::system::error_code& /* error */, size_t /*bytes_transferred*/) {
-
-                             });
-    begin_read();
-}
-void tcp_connection::begin_read() {
-
-    socket_.async_read_some(boost::asio::buffer(input_buf_), [this] (const boost::system::error_code& error,
-            size_t bytes_received) {
-        if (!error) {
-            // hum that is inefficient. Figure out a way to read directly from the input buffer...
-            LOG_DEBUG << "Received " << bytes_received << "bytes\n";
-            acc_packet_.insert(acc_packet_.end(), input_buf_.begin(), input_buf_.begin()+bytes_received);
-            handle_receive();
-        } else {
-            std::cerr << error.message() << std::endl;
-        }
-    });
-}
-
-void tcp_connection::handle_receive() {
-
-    auto maybe_msg = protocol_.parse(acc_packet_);
-    if (maybe_msg) {
-        auto msg = maybe_msg.value();
-        LOG_INFO << "Received message: " << msg.str() << std::endl;
-
-        if (name_.empty()) {
-            handle_join(msg);
-        } else {
-            room_->handle(shared_from_this(), msg);
-            std::for_each(handlers_.begin(), handlers_.end(), [this, &msg] (command_handler* handler){
-                handler->handle(shared_from_this(), msg);
-            });
-        }
-    }
-
-    begin_read();
-}
-
-void tcp_connection::handle_join(const quizzbot::command &cmd) {
-    if (cmd.type() != command::command_type::JOIN_REQUEST) {
-        return;
-    }
-
-    auto candidate_name = cmd.content();
-    if (candidate_name.empty()) {
-        send_command(command{command::command_type::JOIN_NACK, "Name cannot be empty"});
-        return;
-    }
-
-    auto existing = room_->find_by_name(candidate_name);
-    if (existing) {
-        send_command(command{command::command_type::JOIN_NACK, "Name is already taken"});
-        return;
-    }
-
-    name_ = candidate_name;
-    send_command(command{command::command_type::JOIN_ACK, ""});
-}
-
-void tcp_connection::send_message(const std::string& msg_content) {
-
-    command msg(command::command_type::MESSAGE, msg_content);
-    send_command(msg);
-}
-
-void tcp_connection::send_command(const command& cmd) {
-
-
-    boost::asio::async_write(socket_, boost::asio::buffer(protocol_.pack(cmd)),
-                             [] (const boost::system::error_code& /* error */, size_t /*bytes_transferred*/) {
-
-                             });
-}
-// ------------------------------------------------------------------------------------------------------------------
-//  CHAT ROOM
-// ------------------------------------------------------------------------------------------------------------------
-
-void chat_room::handle(const tcp_connection::pointer& emitter, const quizzbot::command &cmd) {
-    switch(cmd.type()) {
-        case command::command_type::MESSAGE:
-            transmit_message(emitter, cmd.content());
-        default:
-            // This handle won't do anything for other commands
-            break;
-    }
-}
-
-void chat_room::add_participant(const tcp_connection::pointer& participant) {
-    participants_.push_back(participant);
-}
-
-void chat_room::transmit_message(const tcp_connection::pointer& emitter, const std::string& message) {
-    for (const auto& participant: participants_) {
-        if (participant != emitter) {
-            std::stringstream ss;
-            ss << emitter->name() << ": " << message;
-            participant->send_message(ss.str());
-        }
-    }
-}
-
-std::experimental::optional<tcp_connection*> chat_room::find_by_name(const std::string &name) {
-    if (name.empty()) {
-        return std::experimental::nullopt;
-    }
-
-    auto it = std::find_if(participants_.begin(), participants_.end(), [&name] (const tcp_connection::pointer& p) {
-       return p->name() == name;
-    });
-
-    if (it != participants_.end()) {
-        // miam
-        return std::experimental::optional<tcp_connection*>{(*it).get()};
-    }
-
-    return std::experimental::nullopt;
-}
-
-// ------------------------------------------------------------------------------------------------------------------
-//  GAME HANDLER
-// ------------------------------------------------------------------------------------------------------------------
-
-game_handler::game_handler(quizzbot::event_queue<quizzbot::command> *queue): queue_(queue) {
-
-    }
-
-void game_handler::handle(const quizzbot::tcp_connection::pointer & /*emitter*/, const quizzbot::command &cmd) {
-    LOG_INFO << "GAME HANDLER HANDLE THINGS";
-    queue_->push(cmd);
-}
-// ------------------------------------------------------------------------------------------------------------------
 //  TCP SERVER
 // ------------------------------------------------------------------------------------------------------------------
 // Waiting for a connection
 void tcp_server::start_accept() {
-    tcp_connection::pointer connection = tcp_connection::create_connection(acceptor_.get_io_service(),
-                                                                           &room_,
-                                                                           &game_handler_);
+    TcpConnection::create_connection(acceptor_.get_io_service(), &room_, &game_handler_, &join_handler_);
+    auto connection = TcpConnection::create_connection(acceptor_.get_io_service(),
+                                                       &room_,
+                                                       &game_handler_,
+                                                       &join_handler_);
 
     acceptor_.async_accept(connection->socket(), [connection, this] (const boost::system::error_code& error) {
         if (!error) {
@@ -175,7 +30,7 @@ void tcp_server::start_accept() {
     });
 }
 
-void tcp_server::handle_new_connection(tcp_connection::pointer connection) {
+void tcp_server::handle_new_connection(const TcpConnection::pointer& connection) {
     room_.add_participant(connection->shared_from_this());
     connection->welcome();
     start_accept();

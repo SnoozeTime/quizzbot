@@ -17,9 +17,12 @@ namespace quizzbot {
     public:
         tcp_client(boost::asio::io_service &io_service,
                    const std::string &server, const std::string &port,
-                   event_queue<command> *queue);
+                   event_queue<Message> *queue);
 
-        void send(const command &cmd);
+        void send(const Message &cmd);
+
+        void set_name(std::string name) { name_ = std::move(name); }
+        const std::string& name() const { return name_; }
     private:
         void begin_read();
         void handle_resolve(const boost::system::error_code &err,
@@ -34,8 +37,9 @@ namespace quizzbot {
         Packet input_buf_ = Packet(512);
         Packet aggr_packet_;
 
-        naive_protocol protocol_;
-        event_queue<command> *queue_;
+        message_protocol protocol_;
+        event_queue<Message> *queue_;
+        std::string name_{};
     };
 }
 

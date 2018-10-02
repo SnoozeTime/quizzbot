@@ -65,7 +65,6 @@ ui::ui(tcp_client *client):
     set_panel_userptr(my_panels[3], my_panels[0]);
 
     // Now add the form;
-    std::cout << "1\n";
     field[1] = nullptr;
     field[0] = new_field(2, x1 - 3, y2-3, 2, 0, 0);
     //set_field_back(field[0], A_UNDERLINE); 	/* Print a line for the option 	*/
@@ -110,8 +109,7 @@ void ui::send_msg() {
     auto buf = field_buffer(field[0], 0);
     if (buf != nullptr) {
         write_to_chat("me:" + std::string(buf));
-        command cmd{command::command_type::MESSAGE, std::string(buf)};
-        client_->send(cmd);
+        client_->send(quizzbot::Message{std::make_unique<MessageMessage>(client_->name(), std::string{buf})});
     } else {
         write_to_chat(strerror(errno));
     }

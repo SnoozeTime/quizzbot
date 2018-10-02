@@ -20,7 +20,7 @@ void run_network(boost::asio::io_service *io_service) {
 
 int main()
 {
-    quizzbot::event_queue<quizzbot::command> queue;
+    quizzbot::event_queue<quizzbot::Message> queue;
     boost::asio::io_service io_service;
     quizzbot::tcp_client c(io_service, "127.0.0.1", "7778", &queue);
     std::thread network_thread(run_network, &io_service);
@@ -29,12 +29,15 @@ int main()
     std::cout << "Input your name\n";
     std::string name;
     std::cin >> name;
-    c.send(quizzbot::command{quizzbot::command::command_type::JOIN_REQUEST, name});
+
+    quizzbot::Message join_msg;
+    join_msg.set_data(std::make_unique<quizzbot::JoinMessage>(name));
+    c.send(join_msg);
 
     // wait for message.
     bool found = false;
     while (!found) {
-        std::queue<quizzbot::command> current_commands;
+        std::queue<quizzbot::Message> current_commands;
         if (queue.size() != 0) {
             current_commands = queue.empty();
         }
@@ -43,22 +46,23 @@ int main()
             auto cmd = current_commands.front();
             current_commands.pop();
 
-            if (cmd.type() == quizzbot::command::command_type::JOIN_ACK) {
+            if (cmd.message_type() == quizzbot::MessageType::JOIN_ACK) {
                 found = true;
                 break;
-            } else if (cmd.type() == quizzbot::command::command_type::JOIN_NACK) {
-                std::cerr << cmd.content() << std::endl;
+            } else if (cmd.message_type() == quizzbot::MessageType::JOIN_NACK) {
+                std::cerr << "ERROR" << std::endl;
                 return 1;
             }
         }
     }
 
+    c.set_name(name);
     quizzbot::ui gui{&c};
     gui.update();
 
     while(gui.should_run())
     {
-        std::queue<quizzbot::command> current_commands;
+        std::queue<quizzbot::Message> current_commands;
         if (queue.size() != 0) {
             current_commands = queue.empty();
         }
@@ -66,7 +70,12 @@ int main()
         while (!current_commands.empty()) {
             auto cmd = current_commands.front();
             current_commands.pop();
-            gui.write_to_chat(cmd.content());
+
+            if (cmd.message_type() == quizzbot::MessageType::MESSAGE) {
+                auto content = dynamic_cast<const quizzbot::MessageMessage*>(cmd.data());
+                assert (content);
+                gui.write_to_chat(content->from() + ": " + content->msg());
+            }
         }
 
         gui.handle_keyboard();

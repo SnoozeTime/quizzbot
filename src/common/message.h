@@ -49,12 +49,17 @@ namespace quizzbot {
     class Message {
     public:
         Message() = default;
-
-        Message(Message& other) {
-            if (other.message_type() != MessageType::NONE) {
-                type_ = other.message_type();
-                // TODO deep copy message. Maybe serialize before queue and deserialize after queue instead...
+        explicit Message(std::unique_ptr<MessageData>&& data):
+            data_{std::move(data)} {
+            if (data_) {
+                type_ = data_->message_type();
             }
+        }
+
+        Message(const Message& other) {
+            std::string packet;
+            other.pack(packet);
+            unpack(packet);
         }
 
         virtual ~Message() = default;
@@ -108,6 +113,9 @@ namespace quizzbot {
     class MessageMessage: public MessageData {
     public:
 
+        MessageMessage() = default;
+        MessageMessage(std::string from, std::string msg): from_{std::move(from)}, msg_{std::move(msg)} {}
+
         void set_from(const std::string& from) { from_ = from; }
         void set_msg(const std::string& msg) { msg_ = msg; }
         const std::string& from() const { return from_; }
@@ -143,6 +151,9 @@ namespace quizzbot {
 
     class JoinMessage: public MessageData {
     public:
+
+        JoinMessage() = default;
+        explicit JoinMessage(std::string name): name_(std::move(name)) {}
 
         void set_name(const std::string& name) { name_ = name; }
         const std::string& name() const { return name_; }
@@ -182,6 +193,10 @@ namespace quizzbot {
     class JoinNackMessage: public MessageData {
     public:
 
+        JoinNackMessage() = default;
+        explicit JoinNackMessage(std::string error):
+            error_(std::move(error)) {}
+
         MessageType message_type() override {
             return MessageType::JOIN_NACK;
         }
@@ -205,18 +220,6 @@ namespace quizzbot {
     private:
         std::string error_{};
     };
-
-    std::unique_ptr<MessageData> create_data(const MessageType& type) {
-        std::cout << (int) type << std::endl;
-        switch (type) {
-            case MessageType::MESSAGE:
-                return std::make_unique<MessageMessage>();
-            case MessageType::JOIN_REQUEST:
-                return std::make_unique<JoinMessage>();
-            default:
-                assert(false);
-        }
-    }
 
     class MessageProtocol {
     public:

@@ -2,51 +2,102 @@
 // Created by benoit on 18/10/02.
 //
 
-#ifndef QUIZZBOT_TCP_CONNECTION_H
-#define QUIZZBOT_TCP_CONNECTION_H
+#pragma once
 
 #include <memory>
 #include <boost/asio.hpp>
-#include "network.h"
+#include "common/log.h"
+#include "common/message.h"
+#include "common/protocol.h"
 
 namespace quizzbot {
+
+    template<typename Msg, typename MsgProtocol> class ChatRoomBase;
+    template<typename Msg, typename MsgProtocol> class GameHandlerBase;
+    template<typename Msg, typename MsgProtocol> class JoinHandlerBase;
 
     template<typename Msg, typename MsgProtocol>
     class TcpConnectionBase : public std::enable_shared_from_this<TcpConnectionBase<Msg, MsgProtocol>> {
     public:
         using pointer = std::shared_ptr<TcpConnectionBase>;
 
-        static pointer create_connection(boost::asio::io_service &io, chat_room *room, game_handler* game) {
-            return pointer(new TcpConnectionBase(io, room, game));
+        static pointer create_connection(
+                boost::asio::io_service &io,
+                ChatRoomBase<Msg, MsgProtocol> *room,
+                GameHandlerBase<Msg, MsgProtocol>* game,
+                JoinHandlerBase<Msg, MsgProtocol>* joiner) {
+            return pointer(new TcpConnectionBase(io, room, game, joiner));
         }
 
         boost::asio::ip::tcp::socket& socket() {
             return socket_;
         }
 
-        void welcome();
-        void send_command(const Msg& cmd);
+        void welcome() {
+            begin_read();
+        }
+
+        void send_command(const Msg& cmd) {
+
+
+            boost::asio::async_write(socket_, boost::asio::buffer(protocol_.pack(cmd)),
+                                     [] (const boost::system::error_code& /* error */, size_t /*bytes_transferred*/) {
+
+                                     });
+        }
 
         const std::string& name() const { return name_; }
-
+        void set_name(std::string name) { name_ = std::move(name); }
     private:
 
-        explicit TcpConnectionBase(boost::asio::io_service &io, chat_room *room, game_handler* game);
+        explicit TcpConnectionBase(
+                boost::asio::io_service &io,
+                ChatRoomBase<Msg, MsgProtocol> *room,
+                GameHandlerBase<Msg, MsgProtocol>* game,
+                JoinHandlerBase<Msg, MsgProtocol>* joiner):
+                socket_{io},
+                room_{room},
+                join_handler_{joiner},
+                game_handler_{game},
+                protocol_{} {
+        }
 
-        void begin_read();
-        void handle_receive();
+        void begin_read() {
 
-        /// This is when a player does not have a name yet. He shouldn't be able to interact with other people
-        /// yet.
-        void handle_join(const command& cmd);
+            socket_.async_read_some(boost::asio::buffer(input_buf_), [this] (const boost::system::error_code& error,
+                                                                             size_t bytes_received) {
+                if (!error) {
+                    // hum that is inefficient. Figure out a way to read directly from the input buffer...
+                    LOG_DEBUG << "Received " << bytes_received << "bytes\n";
+                    acc_packet_.insert(acc_packet_.end(), input_buf_.begin(), input_buf_.begin()+bytes_received);
+                    handle_receive();
+                } else {
+                    std::cerr << error.message() << std::endl;
+                }
+            });
+        }
+
+        void handle_receive() {
+            auto maybe_msg = protocol_.parse(acc_packet_);
+            if (maybe_msg) {
+                auto msg = maybe_msg.value();
+
+                if (name_.empty()) {
+                    join_handler_->handle(this->shared_from_this(), msg);
+                } else {
+                    room_->handle(this->shared_from_this(), msg);
+                    game_handler_->handle(this->shared_from_this(), msg);
+                }
+            }
+
+            begin_read();
+        }
 
         boost::asio::ip::tcp::socket socket_;
 
-        chat_room *room_;
-        // Handlers are installed by the server and are long-lived. If a connection has
-        // a dangling pointer to a handler that is clearly a logic error and it should
-        // fail hard.
-        std::vector<command_handler*> handlers_;
+        ChatRoomBase<Msg, MsgProtocol> *room_;
+        JoinHandlerBase<Msg, MsgProtocol> *join_handler_;
+        GameHandlerBase<Msg, MsgProtocol> *game_handler_;
 
         std::vector<uint8_t> input_buf_ = std::vector<uint8_t>(512);
         std::vector<uint8_t> acc_packet_;
@@ -57,9 +108,6 @@ namespace quizzbot {
         std::string name_;
     };
 
-    using TcpConnection = TcpConnectionBase<Message, MessageProtocol>;
+    using TcpConnection = TcpConnectionBase<Message, message_protocol>;
 
 }
-
-
-#endif //QUIZZBOT_TCP_CONNECTION_H

@@ -10,7 +10,7 @@ namespace quizzbot {
 
     tcp_client::tcp_client(boost::asio::io_service &io_service,
             const std::string &server, const std::string &port,
-            event_queue<command> *queue)
+            event_queue<Message> *queue)
     : resolver_(io_service),
     socket_(io_service),
     queue_(queue) {
@@ -57,7 +57,7 @@ namespace quizzbot {
         }
     }
 
-    void tcp_client::send(const command &cmd) {
+    void tcp_client::send(const Message &cmd) {
         socket_.get_io_service().post([cmd, this] {
             boost::asio::async_write(socket_, boost::asio::buffer(protocol_.pack(cmd)),
                     [] (const boost::system::error_code& err, size_t /* bytes_send */) {

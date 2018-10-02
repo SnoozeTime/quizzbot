@@ -41,6 +41,7 @@ private:
     bool should_run_ = true;
 
     tcp_client *client_;
+
     void switch_panel();
     void send_msg();
 };

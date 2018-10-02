@@ -12,96 +12,18 @@
 #include "common/command.h"
 #include "common/event_queue.h"
 
+#include "handler.h"
+#include "tcp_connection.h"
+
 namespace quizzbot {
-
-    class chat_room;
-    class game_handler;
-
-    class tcp_connection : public std::enable_shared_from_this<tcp_connection> {
-    public:
-        using pointer = std::shared_ptr<tcp_connection>;
-
-        static pointer create_connection(boost::asio::io_service &io, chat_room *room, game_handler* game) {
-            return pointer(new tcp_connection(io, room, game));
-        }
-
-        boost::asio::ip::tcp::socket& socket() {
-            return socket_;
-        }
-
-        void welcome();
-
-        void send_message(const std::string& msg);
-        void send_command(const command& cmd);
-
-        const std::string& name() const { return name_; }
-
-    private:
-        explicit tcp_connection(boost::asio::io_service &io, chat_room *room, game_handler* game);
-
-        void begin_read();
-        void handle_receive();
-
-        /// This is when a player does not have a name yet. He shouldn't be able to interact with other people
-        /// yet.
-        void handle_join(const command& cmd);
-
-        boost::asio::ip::tcp::socket socket_;
-
-        chat_room *room_;
-        // Handlers are installed by the server and are long-lived. If a connection has
-        // a dangling pointer to a handler that is clearly a logic error and it should
-        // fail hard.
-        std::vector<command_handler*> handlers_;
-
-        std::vector<uint8_t> input_buf_ = std::vector<uint8_t>(512);
-        std::vector<uint8_t> acc_packet_;
-
-        message_protocol protocol_;
-
-        // name of the player. Empty at first. Need to be set before anything else. :)
-        std::string name_;
-    };
-
-    class chat_room: public command_handler {
-    public:
-
-        void handle(const tcp_connection::pointer& emitter, const command& cmd) override;
-
-        // Add a participant to the chat room.
-        void add_participant(const tcp_connection::pointer& participant);
-
-        // Send a message to all participants except the emitter.
-        void transmit_message(const tcp_connection::pointer& emitter, const std::string& message);
-
-        // Send a message to all participants.
-        void broadcast(const std::string& message);
-
-        /// This will try to find a player by name. return empty optional if cannot find.
-        ///
-        /// \param name
-        /// \return
-        std::experimental::optional<tcp_connection*> find_by_name(const std::string& name);
-    private:
-        std::vector<tcp_connection::pointer> participants_;
-    };
-
-    class game_handler: public command_handler {
-    public:
-        explicit game_handler(event_queue<command> *queue);
-        void handle(const tcp_connection::pointer& emitter, const command& cmd) override;
-    private:
-        // Event queue (thread safe) that is shared between the main thread and the network threads.
-        // Network threads are the producers and will push command to the queue. Main thread is the
-        // only consumer.
-        event_queue<command>* queue_;
-    };
 
     class tcp_server {
     public:
-        explicit tcp_server(boost::asio::io_service& io, int port, event_queue<command> *queue):
+        explicit tcp_server(boost::asio::io_service& io, unsigned short port, event_queue<Message> *queue):
+                room_{},
                 game_handler_(queue),
-                acceptor_(io, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)) {
+                join_handler_{&room_},
+                acceptor_{io, boost::asio::ip::tcp::endpoint{boost::asio::ip::tcp::v4(), port}} {
             LOG_INFO << "Listening on port " << port;
             start_accept();
         }
@@ -111,10 +33,12 @@ namespace quizzbot {
         // Waiting for a connection
         void start_accept();
 
-        void handle_new_connection(tcp_connection::pointer connection);
+        void handle_new_connection(const TcpConnection::pointer& connection);
 
-        chat_room room_;
-        game_handler game_handler_;
+        // Order of construction is important. Join handler depends on chat room
+        ChatRoom room_;
+        GameHandler game_handler_;
+        JoinHandler  join_handler_;
         boost::asio::ip::tcp::acceptor acceptor_;
     };
 }

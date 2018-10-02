@@ -19,6 +19,7 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR}/src)
 # Contain all classes without main
 add_library(quizzbot src/server/network.cc
                      src/server/handler.cc
+                     src/common/message.cc
                      src/server/game.cc
                      src/common/command.cc
                      src/common/protocol.cc

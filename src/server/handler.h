@@ -1,12 +1,8 @@
-//
-// Created by benoit on 18/10/02.
-//
-
-#ifndef QUIZZBOT_HANDLER_H
-#define QUIZZBOT_HANDLER_H
+#pragma once
 
 #include "tcp_connection.h"
 #include "common/message.h"
+#include "common/event_queue.h"
 #include <experimental/optional>
 
 namespace quizzbot {
@@ -83,8 +79,9 @@ namespace quizzbot {
     class GameHandlerBase: public Handler<Msg, MsgParser>{
     public:
         explicit GameHandlerBase(event_queue<Msg> *queue): queue_(queue) {}
-        void handle(const TcpConnection::pointer& /*emitter*/, const Msg& cmd) override {
+        void handle(const std::shared_ptr<TcpConnectionBase<Msg, MsgParser>>& /*emitter*/, const Msg& cmd) override {
             LOG_INFO << "GAME HANDLER HANDLE THINGS";
+            //Msg copy{cmd};
             queue_->push(cmd);
         }
     private:
@@ -94,9 +91,62 @@ namespace quizzbot {
         event_queue<Message>* queue_;
     };
 
-    using ChatRoom = ChatRoomBase<Message, MessageProtocol>;
-    using GameHandler = GameHandlerBase<Message, MessageProtocol>;
+    template <typename Msg, typename MsgParser>
+    class JoinHandlerBase: public Handler<Msg, MsgParser>{
+    public:
+        JoinHandlerBase(ChatRoomBase<Msg, MsgParser>* room):
+            room_(room) {}
+
+        void handle(const std::shared_ptr<TcpConnectionBase<Msg, MsgParser>>& /*emitter*/, const Msg& /*msg*/) override {
+            // Need to be specialized.
+        }
+    private:
+
+        ChatRoomBase<Msg, MsgParser>* room_;
+    };
+
+    template <>
+    class JoinHandlerBase<Message, message_protocol>: public Handler<Message, message_protocol> {
+    public:
+        JoinHandlerBase(ChatRoomBase<Message, message_protocol>* room):
+                room_(room) {}
+
+        void handle(const std::shared_ptr<TcpConnectionBase<Message, message_protocol>>& emitter, const Message& msg) override {
+            if (msg.message_type() != MessageType::JOIN_REQUEST) {
+                return;
+            }
+
+            auto data = dynamic_cast<const JoinMessage*>(msg.data());
+            assert (data);
+
+            auto candidate_name = data->name();
+            if (candidate_name.empty()) {
+                Message nack;
+                nack.set_data(std::make_unique<JoinNackMessage>("Name cannot be empty."));
+                emitter->send_command(nack);
+                return;
+            }
+
+            auto maybe_existing = room_->find_by_name(candidate_name);
+            if (maybe_existing) {
+                Message nack;
+                nack.set_data(std::make_unique<JoinNackMessage>("Name already exists."));
+                emitter->send_command(nack);
+                return;
+            }
+
+            emitter->set_name(candidate_name);
+
+            Message ack;
+            ack.set_data(std::make_unique<JoinAckMessage>());
+            emitter->send_command(ack);
+        }
+    private:
+
+        ChatRoomBase<Message, message_protocol>* room_;
+    };
+
+    using ChatRoom = ChatRoomBase<Message, message_protocol>;
+    using GameHandler = GameHandlerBase<Message, message_protocol>;
+    using JoinHandler = JoinHandlerBase<Message, message_protocol>;
 }
-
-
-#endif //QUIZZBOT_HANDLER_H
