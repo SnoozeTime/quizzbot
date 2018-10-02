@@ -84,7 +84,8 @@ namespace quizzbot {
     void tcp_client::handle_read() {
         auto maybe_msg = protocol_.parse(aggr_packet_);
         if (maybe_msg) {
-            queue_->push(maybe_msg.value());
+            auto v = maybe_msg.value();
+            queue_->push(std::move(v));
         }
 
         begin_read();

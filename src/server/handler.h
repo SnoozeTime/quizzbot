@@ -7,6 +7,30 @@
 
 namespace quizzbot {
 
+    template <typename Msg>
+    struct GameEventBase {
+        GameEventBase(std::string name, Message msg):
+            name(std::move(name)),
+            msg(std::move(msg)) {}
+        GameEventBase(GameEventBase&& other) noexcept:
+                name(std::move(other.name)),
+                msg(std::move(other.msg)) {
+
+        }
+        GameEventBase& operator=(GameEventBase&& other) {
+            if (this == &other) {
+                return *this;
+            }
+
+            name = std::move(other.name);
+            msg = std::move(other.msg);
+
+            return *this;
+        }
+
+        std::string name;
+        Msg msg;
+    };
     template <typename Msg, typename MsgParser>
     class Handler {
     public:
@@ -78,17 +102,18 @@ namespace quizzbot {
     template <typename Msg, typename MsgParser>
     class GameHandlerBase: public Handler<Msg, MsgParser>{
     public:
-        explicit GameHandlerBase(event_queue<Msg> *queue): queue_(queue) {}
-        void handle(const std::shared_ptr<TcpConnectionBase<Msg, MsgParser>>& /*emitter*/, const Msg& cmd) override {
+        explicit GameHandlerBase(event_queue<GameEventBase<Msg>> *queue): queue_(queue) {}
+        void handle(const std::shared_ptr<TcpConnectionBase<Msg, MsgParser>>& emitter, const Msg& cmd) override {
             LOG_INFO << "GAME HANDLER HANDLE THINGS";
             //Msg copy{cmd};
-            queue_->push(cmd);
+
+            queue_->push(GameEventBase<Msg>{emitter->name(), cmd});
         }
     private:
         // Event queue (thread safe) that is shared between the main thread and the network threads.
         // Network threads are the producers and will push command to the queue. Main thread is the
         // only consumer.
-        event_queue<Message>* queue_;
+        event_queue<GameEventBase<Msg>>* queue_;
     };
 
     template <typename Msg, typename MsgParser>
@@ -149,4 +174,5 @@ namespace quizzbot {
     using ChatRoom = ChatRoomBase<Message, message_protocol>;
     using GameHandler = GameHandlerBase<Message, message_protocol>;
     using JoinHandler = JoinHandlerBase<Message, message_protocol>;
+    using GameEvent = GameEventBase<Message>;
 }

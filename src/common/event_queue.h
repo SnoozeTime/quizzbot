@@ -7,6 +7,7 @@
 
 #include <queue>
 #include <mutex>
+#include <utility>
 
 namespace quizzbot {
     template<typename T>
@@ -14,8 +15,9 @@ namespace quizzbot {
 
     public:
 
-        void push(T element);
-        void pop(T& element);
+       // void push(T element);
+        void push(T&& element);
+        // void pop(T& element);
 
         /// Will empty queue and return a new queue with all elmements
         std::queue<T> empty();
@@ -30,9 +32,9 @@ namespace quizzbot {
     };
 
     template<typename T>
-    void event_queue<T>::push(T element) {
+    void event_queue<T>::push(T&& element) {
         std::lock_guard<std::mutex> lock(mutex_);
-        queue_.push(element);
+        queue_.push(std::move(element));
     }
 
     template<typename T>

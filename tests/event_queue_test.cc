@@ -31,7 +31,8 @@ TEST(event_queue, one_thread) {
 
 void producer(event_queue<std::string> *queue, std::string msg, int nb) {
     for (int i = 0; i < nb; i++) {
-        queue->push(msg);
+        auto copy = std::string{msg};
+        queue->push(std::move(copy));
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }

@@ -19,7 +19,7 @@ namespace quizzbot {
 
     class tcp_server {
     public:
-        explicit tcp_server(boost::asio::io_service& io, unsigned short port, event_queue<Message> *queue):
+        explicit tcp_server(boost::asio::io_service& io, unsigned short port, event_queue<GameEvent> *queue):
                 room_{},
                 game_handler_(queue),
                 join_handler_{&room_},

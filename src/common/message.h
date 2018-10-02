@@ -62,6 +62,9 @@ namespace quizzbot {
             unpack(packet);
         }
 
+        Message(Message&& other) noexcept = default;
+        Message& operator=(Message&& other) = default;
+
         virtual ~Message() = default;
 
         MessageType message_type() const {
@@ -115,6 +118,8 @@ namespace quizzbot {
 
         MessageMessage() = default;
         MessageMessage(std::string from, std::string msg): from_{std::move(from)}, msg_{std::move(msg)} {}
+        MessageMessage(MessageMessage&& other) noexcept = default;
+        MessageMessage& operator=(MessageMessage& other) = default;
 
         void set_from(const std::string& from) { from_ = from; }
         void set_msg(const std::string& msg) { msg_ = msg; }
@@ -154,6 +159,8 @@ namespace quizzbot {
 
         JoinMessage() = default;
         explicit JoinMessage(std::string name): name_(std::move(name)) {}
+        JoinMessage(JoinMessage&& other) noexcept = default;
+        JoinMessage& operator=(JoinMessage& other) = default;
 
         void set_name(const std::string& name) { name_ = name; }
         const std::string& name() const { return name_; }
@@ -180,7 +187,9 @@ namespace quizzbot {
 
     class JoinAckMessage: public MessageData {
     public:
-
+        JoinAckMessage() = default;
+        JoinAckMessage(JoinAckMessage&& other) noexcept = default;
+        JoinAckMessage& operator=(JoinAckMessage& other) = default;
         MessageType message_type() override {
             return MessageType::JOIN_ACK;
         }
@@ -196,6 +205,8 @@ namespace quizzbot {
         JoinNackMessage() = default;
         explicit JoinNackMessage(std::string error):
             error_(std::move(error)) {}
+        JoinNackMessage(JoinNackMessage&& other) noexcept = default;
+        JoinNackMessage& operator=(JoinNackMessage& other) = default;
 
         MessageType message_type() override {
             return MessageType::JOIN_NACK;

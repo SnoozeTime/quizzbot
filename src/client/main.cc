@@ -43,7 +43,7 @@ int main()
         }
 
         while (!current_commands.empty()) {
-            auto cmd = current_commands.front();
+            auto cmd = std::move(current_commands.front());
             current_commands.pop();
 
             if (cmd.message_type() == quizzbot::MessageType::JOIN_ACK) {
