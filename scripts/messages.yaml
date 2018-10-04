@@ -1,0 +1,10 @@
+
+messages:
+  - name: Message
+    elements:
+      - name: msg
+        type: string
+      - name: from
+        type: string
+    line_cmd: [""]
+    line_fmt: "{{ msg }}"

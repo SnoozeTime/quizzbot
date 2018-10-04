@@ -44,6 +44,7 @@ namespace quizzbot {
         virtual void unpack(std::string& ss) = 0;
         virtual void pack(std::stringstream& ss) = 0;
     };
+
     std::unique_ptr<MessageData> create_data(const MessageType& type);
 
     class Message {
@@ -79,7 +80,11 @@ namespace quizzbot {
 
         // todo error handling when no data.
         const MessageData* data() const {
-            return data_.get();
+            if (data_) {
+                return data_.get();
+            } else {
+                return nullptr;
+            }
         }
 
         void set_data(std::unique_ptr<MessageData> data) {
@@ -153,6 +158,48 @@ namespace quizzbot {
         std::string from_{};
         std::string msg_{};
     };
+
+    class AnswerMessage: public MessageData {
+    public:
+
+        AnswerMessage() = default;
+        AnswerMessage(std::string from, std::string answer): from_{std::move(from)}, answer_{std::move(answer)} {}
+        AnswerMessage(AnswerMessage&& other) noexcept = default;
+        AnswerMessage& operator=(AnswerMessage& other) = default;
+
+        void set_from(const std::string& from) { from_ = from; }
+        void set_answer(const std::string& answer) { answer_ = answer_; }
+        const std::string& from() const { return from_; }
+        const std::string& answer() const { return answer_; }
+
+        MessageType message_type() override {
+            return MessageType::ANSWER;
+        }
+
+        void unpack(std::string& ss) override {
+            size_t offset = 0;
+            {
+                auto oh = msgpack::unpack(ss.c_str(), ss.size(), offset);
+                auto o = oh.get();
+                from_ = o.as<std::string>();
+            }
+            {
+                auto oh = msgpack::unpack(ss.c_str(), ss.size(), offset);
+                auto o = oh.get();
+                answer_ = o.as<std::string>();
+            }
+        }
+
+        void pack(std::stringstream& ss) override {
+            msgpack::pack(ss, from_);
+            msgpack::pack(ss, answer_);
+        }
+
+    private:
+        std::string from_{};
+        std::string answer_{};
+    };
+
 
     class JoinMessage: public MessageData {
     public:
@@ -231,6 +278,40 @@ namespace quizzbot {
     private:
         std::string error_{};
     };
+
+    class ErrorMessage: public MessageData {
+    public:
+
+        ErrorMessage() = default;
+        explicit ErrorMessage(std::string error):
+                error_(std::move(error)) {}
+        ErrorMessage(ErrorMessage&& other) noexcept = default;
+        ErrorMessage& operator=(ErrorMessage& other) = default;
+
+        MessageType message_type() override {
+            return MessageType::ERROR;
+        }
+
+        void unpack(std::string& ss) override {
+            size_t offset = 0;
+            {
+                auto oh = msgpack::unpack(ss.c_str(), ss.size(), offset);
+                auto o = oh.get();
+                error_ = o.as<std::string>();
+            }
+        }
+
+        void pack(std::stringstream& ss) override {
+            msgpack::pack(ss, error_);
+        }
+
+        const std::string& error() const { return error_; }
+        void set_error(std::string error) { error_ = std::move(error); }
+
+    private:
+        std::string error_{};
+    };
+
 
     class MessageProtocol {
     public:

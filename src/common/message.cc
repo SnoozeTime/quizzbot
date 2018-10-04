@@ -15,6 +15,10 @@ namespace quizzbot {
                 return std::make_unique<JoinAckMessage>();
             case MessageType::JOIN_NACK:
                 return std::make_unique<JoinNackMessage>();
+            case MessageType::ANSWER:
+                return std::make_unique<AnswerMessage>();
+            case MessageType::ERROR:
+                return std::make_unique<ErrorMessage>();
             default:
                 assert(false);
         }

@@ -1,0 +1,8 @@
+TODO LIST
+=========
+
+* Representation of messages (JSON? YAML? Python dict?)
+* Generator for message
+    * Should be able to generate all the MessageData classes
+    * Should be able to generate the LineParser
+    * Should be able to generate the message factory
