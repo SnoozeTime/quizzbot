@@ -1,0 +1,23 @@
+#pragma once
+
+#include "common/message.h"
+#include "common/message_type.h"
+
+{% for msg in msgs %}
+#include "messages/{{ msg.name }}Message.h"
+{% endfor %}
+
+
+namespace quizzbot {
+
+  std::unique_ptr<MessageData> create_data(const MessageType& type) {
+        switch (type) {
+	  {% for msg in msgs %}
+	case MessageType::{{ msg.msg_type }}:
+	return std::make_unique<{{ msg.name}}Message>();
+	  {% endfor %}
+            default:
+                assert(false);
+        }
+    }
+}
