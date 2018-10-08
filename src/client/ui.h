@@ -9,6 +9,7 @@
 #include <string>
 #include <iostream>
 #include "common/event_queue.h"
+#include "line_parser.h"
 #include <form.h>
 
 namespace quizzbot {
@@ -41,6 +42,7 @@ private:
     bool should_run_ = true;
 
     tcp_client *client_;
+    LineParser line_parser_;
 
     void switch_panel();
     void send_msg();

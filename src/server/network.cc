@@ -14,9 +14,8 @@ namespace quizzbot {
 // ------------------------------------------------------------------------------------------------------------------
 // Waiting for a connection
 void tcp_server::start_accept() {
-    TcpConnection::create_connection(acceptor_.get_io_service(), &room_, &game_handler_, &join_handler_);
     auto connection = TcpConnection::create_connection(acceptor_.get_io_service(),
-                                                       &room_,
+                                                       room_,
                                                        &game_handler_,
                                                        &join_handler_);
 
@@ -31,7 +30,7 @@ void tcp_server::start_accept() {
 }
 
 void tcp_server::handle_new_connection(const TcpConnection::pointer& connection) {
-    room_.add_participant(connection->shared_from_this());
+    room_->add_participant(connection->shared_from_this());
     connection->welcome();
     start_accept();
 }

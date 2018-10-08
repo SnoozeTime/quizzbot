@@ -5,6 +5,8 @@
 #include "line_parser.h"
 
 #include <sstream>
+#include <common/messages/AnswerMessage.h>
+#include <common/string_utils.h>
 #include "common/messages/ErrorMessage.h"
 #include "common/messages/MessageMessage.h"
 
@@ -28,6 +30,11 @@ namespace quizzbot {
         ss >> cmd;
 
         // Check it is a valid command.
+        if (cmd == "/a" || cmd == "/answer") {
+            std::string answer;
+            getline(ss, answer);
+            return Message{std::make_unique<AnswerMessage>(name_, trim_left(answer))};
+        }
 
         return Message{std::make_unique<ErrorMessage>("Couldn't find command.")};
     }

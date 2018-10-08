@@ -10,6 +10,7 @@
 #include <memory>
 #include "network.h"
 #include "common/event_queue.h"
+#include "quizz_system.h"
 
 namespace quizzbot {
 
@@ -33,7 +34,11 @@ private:
     // we initialize the server.
     boost::asio::io_service::work io_work_;
     std::thread io_thread_;
+
+    // Why unique_ptr? I want to control the initialization
+    std::unique_ptr<ChatRoom> participants_;
     std::unique_ptr<tcp_server> server_;
+    std::unique_ptr<QuizzSystem> quizz_system_;
 };
 
 }

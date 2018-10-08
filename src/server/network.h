@@ -19,10 +19,10 @@ namespace quizzbot {
 
     class tcp_server {
     public:
-        explicit tcp_server(boost::asio::io_service& io, unsigned short port, event_queue<GameEvent> *queue):
-                room_{},
+        explicit tcp_server(boost::asio::io_service& io, unsigned short port, ChatRoom *room, event_queue<GameEvent> *queue):
+                room_{room},
                 game_handler_(queue),
-                join_handler_{&room_},
+                join_handler_{room},
                 acceptor_{io, boost::asio::ip::tcp::endpoint{boost::asio::ip::tcp::v4(), port}} {
             LOG_INFO << "Listening on port " << port;
             start_accept();
@@ -36,7 +36,7 @@ namespace quizzbot {
         void handle_new_connection(const TcpConnection::pointer& connection);
 
         // Order of construction is important. Join handler depends on chat room
-        ChatRoom room_;
+        ChatRoom *room_;
         GameHandler game_handler_;
         JoinHandler  join_handler_;
         boost::asio::ip::tcp::acceptor acceptor_;

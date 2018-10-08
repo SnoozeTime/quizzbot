@@ -84,6 +84,12 @@ namespace quizzbot {
 
                 if (name_.empty()) {
                     join_handler_->handle(this->shared_from_this(), msg);
+
+                    // If the joining process is ok, name will be set to the correct value. We relay
+                    // this to the game so that we can send the quizz question and list of players and so on.
+                    if (!name_.empty()) {
+                        game_handler_->handle(this->shared_from_this(), msg);
+                    }
                 } else {
                     room_->handle(this->shared_from_this(), msg);
                     game_handler_->handle(this->shared_from_this(), msg);

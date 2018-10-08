@@ -7,6 +7,7 @@
 #include <iostream>
 #include <cstring>
 #include <assert.h>
+#include <common/messages/ErrorMessage.h>
 #include "ui.h"
 #include "common/messages/MessageMessage.h"
 
@@ -14,7 +15,8 @@
 using namespace quizzbot;
 
 ui::ui(tcp_client *client):
-    client_(client) {
+    client_(client),
+    line_parser_{client->name()}{
     initscr();
     cbreak();
     noecho();
@@ -109,8 +111,19 @@ void ui::send_msg() {
     form_driver(form_, REQ_VALIDATION);
     auto buf = field_buffer(field[0], 0);
     if (buf != nullptr) {
-        write_to_chat("me:" + std::string(buf));
-        client_->send(quizzbot::Message{std::make_unique<MessageMessage>(client_->name(), std::string{buf})});
+
+        auto msg = line_parser_.parse_line(std::string(buf));
+        if (msg.message_type() == quizzbot::MessageType::MESSAGE) {
+            write_to_chat("me:" + std::string(buf));
+            client_->send(msg);
+        } else if (msg.message_type() == quizzbot::MessageType::ERROR) {
+            auto error_msg = dynamic_cast<const quizzbot::ErrorMessage*>(msg.data());
+            assert (error_msg != nullptr);
+            write_to_chat("ERROR: " + error_msg->error());
+        } else {
+            client_->send(msg);
+        }
+
     } else {
         write_to_chat(strerror(errno));
     }

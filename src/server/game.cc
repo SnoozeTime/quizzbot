@@ -13,9 +13,11 @@ std::atomic_bool should_run{true};
 game::game():
     io_(),
     io_work_(io_),
-    io_thread_([this] { io_.run(); }){
+    io_thread_([this] { io_.run(); }),
+    participants_{std::make_unique<ChatRoom>()} {
 
 }
+
 void game::loop() {
 
     // Install the sigint handler on io service
@@ -30,10 +32,14 @@ void game::loop() {
 
     // Start the server.
     event_queue<GameEvent> queue;
-    server_ = std::make_unique<tcp_server>(io_, 7778, &queue);
+    server_ = std::make_unique<tcp_server>(io_, 7778, participants_.get(), &queue);
+    quizz_system_ = std::make_unique<QuizzSystem>(this);
 
     while (should_run) {
 
+        // ----------------------------------------------
+        // 1. GET AND PROCESS INPUT FROM PLAYERS
+        // ----------------------------------------------
         std::queue<GameEvent> current_commands;
         if (queue.size() != 0) {
             current_commands = queue.empty();
@@ -44,7 +50,9 @@ void game::loop() {
             auto cmd = std::move(current_commands.front());
             current_commands.pop();
 
-            std::cout << "GOT THE CMD FROM " << cmd.name << std::endl;
+            if (cmd.msg.message_type() == MessageType::ANSWER) {
+                std::cout << "Got an answer from " << cmd.name << '\n';
+            }
         }
 
         std::this_thread::sleep_for(std::chrono::seconds(1));

@@ -24,6 +24,7 @@ add_library(quizzbot src/server/network.cc
                      src/common/command.cc
                      src/common/protocol.cc
                      src/common/player.cc
+                    src/server/quizz_system.cc
         )
 target_link_libraries(quizzbot ${Boost_LIBRARIES})
 

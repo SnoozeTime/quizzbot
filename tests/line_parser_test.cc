@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 #include "client/line_parser.h"
 #include <string>
+#include <common/messages/AnswerMessage.h>
 #include "common/messages/ErrorMessage.h"
 #include "common/messages/MessageMessage.h"
 
@@ -42,6 +43,10 @@ TEST(line_parser, parse_answer_short_cmd) {
     auto  msg = parser.parse_line(line);
 
     ASSERT_EQ(MessageType::ANSWER, msg.message_type());
+
+    auto answer_content = dynamic_cast<const AnswerMessage*>(msg.data());
+    ASSERT_TRUE(answer_content != nullptr);
+    ASSERT_STREQ("Bonjour c'est une ligne.", answer_content->answer().c_str());
 }
 
 TEST(line_parser, parse_answer_long_cmd) {

@@ -35,9 +35,11 @@ namespace quizzbot {
         std::string name;
         Msg msg;
     };
+
     template <typename Msg, typename MsgParser>
     class Handler {
     public:
+        virtual ~Handler() {}
         virtual void handle(const std::shared_ptr<TcpConnectionBase<Msg, MsgParser>>& emitter, const Msg& cmd) = 0;
     };
 
@@ -68,6 +70,13 @@ namespace quizzbot {
                 if (participant != emitter) {
                     participant->send_command(message);
                 }
+            }
+        }
+
+        void send_to(const std::string& target, const Msg& message) {
+            auto target_conn = find_by_name(target);
+            if (target_conn) {
+                target_conn.value()->send_command(message);
             }
         }
 

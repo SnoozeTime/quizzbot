@@ -12,6 +12,7 @@ endfunction()
 add_quizzbot_test(command_test)
 add_quizzbot_test(parser_test)
 add_quizzbot_test(event_queue_test)
+add_quizzbot_test(string_utils_test)
 add_quizzbot_client_test(line_parser_test)
 
 add_executable(all_tests command_test.cc parser_test.cc)
