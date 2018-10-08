@@ -4,6 +4,10 @@
 #include "common/message.h"
 #include "common/event_queue.h"
 #include <experimental/optional>
+#include "common/messages/JoinAckMessage.h"
+#include "common/messages/JoinNackMessage.h"
+#include "common/messages/JoinMessage.h"
+
 
 namespace quizzbot {
 

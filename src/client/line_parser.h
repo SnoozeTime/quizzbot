@@ -16,7 +16,7 @@ namespace quizzbot{
     class LineParser {
 
     public:
-        explicit LineParser(std::string name): name_{name} {}
+        explicit LineParser(std::string name): name_{std::move(name)} {}
         Message parse_line(const std::string& line);
 
     private:

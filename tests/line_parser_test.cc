@@ -5,6 +5,8 @@
 #include <gtest/gtest.h>
 #include "client/line_parser.h"
 #include <string>
+#include "common/messages/ErrorMessage.h"
+#include "common/messages/MessageMessage.h"
 
 using namespace quizzbot;
 

@@ -21,4 +21,5 @@ for filename in ${GENERATED_FOLDER}/messages/*.h; do
 done
 
 # Move them !
+rm -r ${DESTINATION}/messages
 mv ${GENERATED_FOLDER}/* $DESTINATION

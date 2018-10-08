@@ -5,6 +5,8 @@
 #include "line_parser.h"
 
 #include <sstream>
+#include "common/messages/ErrorMessage.h"
+#include "common/messages/MessageMessage.h"
 
 namespace quizzbot {
     Message LineParser::parse_line(const std::string &line) {
@@ -24,7 +26,7 @@ namespace quizzbot {
 
         std::string cmd;
         ss >> cmd;
-        
+
         // Check it is a valid command.
 
         return Message{std::make_unique<ErrorMessage>("Couldn't find command.")};

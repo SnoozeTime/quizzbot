@@ -44,7 +44,7 @@ def main(msgs):
         with open('{}/message.h'.format(GENERATED_FOLDER), 'w') as g:
             g.write(include_header_template.render(enums=yml['types']))
 
-        with open('{}/message.cpp'.format(GENERATED_FOLDER), 'w') as h:
+        with open('{}/message.cc'.format(GENERATED_FOLDER), 'w') as h:
             h.write(include_impl_template.render(msgs=msgs))
 
 if __name__ == '__main__':

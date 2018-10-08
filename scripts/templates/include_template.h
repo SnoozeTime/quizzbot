@@ -13,6 +13,7 @@ namespace quizzbot {
   enum class MessageType {
     {% for enum_name in enums %}
 	  {{ enum_name}},{% endfor %}
+	  NONE,
     };
 
     class MessageData {

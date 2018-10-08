@@ -8,6 +8,7 @@
 #include <cstring>
 #include <assert.h>
 #include "ui.h"
+#include "common/messages/MessageMessage.h"
 
 #include "tcp_client.h"
 using namespace quizzbot;

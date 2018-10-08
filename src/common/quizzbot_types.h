@@ -16,4 +16,6 @@ namespace quizzbot {
         BAD_CHECKSUM,
         BLURP,
     };
+
+    template<typename... Ts> inline void UNUSED(Ts&&...) {}
 }

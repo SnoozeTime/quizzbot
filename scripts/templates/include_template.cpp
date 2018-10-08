@@ -1,7 +1,7 @@
 #include "message.h"
 
 {% for msg in msgs %}
-#include "messages/{ msg.name }}Message.h"{% endfor %}
+#include "messages/{{ msg.name }}Message.h"{% endfor %}
 
 namespace quizzbot {
   std::unique_ptr<MessageData> create_data(const MessageType& type) {

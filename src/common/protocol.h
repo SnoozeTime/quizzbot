@@ -14,8 +14,6 @@
 
 namespace quizzbot {
 
-
-
     int compute_cc(const Packet& content);
 
     /**

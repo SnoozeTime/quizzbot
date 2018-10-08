@@ -5,6 +5,8 @@
 #include <string>
 
 #include "common/message.h"
+#include "common/quizzbot_types.h"
+
 
 namespace quizzbot {
 class {{ msg.name }}Message: public MessageData {
@@ -29,6 +31,7 @@ public:
   }
 
   void unpack(std::string& ss) override {
+    {% if msg.args|length > 0 %}
     size_t offset = 0;
     {% for arg in msg.args %}
     {
@@ -37,24 +40,31 @@ public:
       {{ arg.name }}_ = o.as<{{ arg.type }}>();
     }
     {% endfor %}
+    {% else %}
+    UNUSED(ss);
+    {% endif %}
   }
 
   void pack(std::stringstream& ss) override {
+    {% if msg.args|length > 0 %}
     {% for arg in msg.args %}
     msgpack::pack(ss, {{ arg.name }}_);
     {% endfor %}
+    {% else %}
+    UNUSED(ss);
+    {% endif %}
   }
 
   // Then Getters and setters
   {% for arg in msg.args %}
   void set_{{ arg.name }}(const {{ arg.type }}& {{ arg.name }}) { {{ arg.name }}_ = {{ arg.name }};}
-  const {{ arg.type }}& {{ arg.name }}() { return {{ arg.name }}_;}
+  const {{ arg.type }}& {{ arg.name }}() const { return {{ arg.name }}_;}
   {% endfor %}
 
   // double dispatch to avoid casting.
-  void dispatch(MessageHandler* handler) override {
-    handler->handle(*this);
-  }
+  //  void dispatch(MessageHandler* handler) override {
+  //  handler->handle(*this);
+  //}
 
 private:
   {% for member in msg.args %}
